@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/ashnamuh/telegram-google-calendar-bot#readme",
   "dependencies": {
-    "googleapis": "^27.0.0"
+    "googleapis": "^27.0.0",
+    "node-telegram-bot-api": "^0.30.0"
   }
 }
