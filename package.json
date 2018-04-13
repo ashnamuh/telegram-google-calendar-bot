@@ -1,0 +1,19 @@
+{
+  "name": "telegram-google-calendar-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ashnamuh/telegram-google-calendar-bot.git"
+  },
+  "author": "ashnamuh",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ashnamuh/telegram-google-calendar-bot/issues"
+  },
+  "homepage": "https://github.com/ashnamuh/telegram-google-calendar-bot#readme"
+}
