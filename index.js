@@ -85,7 +85,7 @@ exports.run = async () => {
     noticeSoonEvents(oAuth2Client)
   })
 
-  schedule.scheduleJob('13 11 * * *', () => {
+  schedule.scheduleJob('23 9 * * *', () => {
     console.log(moment().toString() + 'noticeDailyEvents')
     noticeDailyEvents(oAuth2Client)
   })
