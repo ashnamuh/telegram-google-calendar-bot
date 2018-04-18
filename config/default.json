@@ -1,0 +1,6 @@
+{
+  "bot": {
+    "telegramBotToken": "Use token to access the HTTP API",
+    "telegramChatId": "Telegram chat id"
+  }
+}
