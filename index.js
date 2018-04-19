@@ -74,36 +74,36 @@ exports.run = async () => {
   } catch (err) {
     token = getAccessToken(oAuth2Client)
   }
+  config.calendar.ids.map(calendarId => {
+    schedule.scheduleJob('*/3 * * * *', () => {
+      console.log(moment().toString() + 'noticeUpsertedEvents')
+      noticeUpsertedEvents(oAuth2Client, calendarId)
+    })
+    schedule.scheduleJob('*/1 * * * *', () => {
+      console.log(moment().toString() + 'noticeSoonEvents')
+      noticeSoonEvents(oAuth2Client, calendarId)
+    })
 
-  schedule.scheduleJob('*/3 * * * *', () => {
-    console.log(moment().toString() + 'noticeUpsertedEvents')
-    noticeUpsertedEvents(oAuth2Client)
-  })
+    schedule.scheduleJob('23 9 * * *', () => {
+      console.log(moment().toString() + 'noticeDailyEvents')
+      noticeDailyEvents(oAuth2Client, calendarId)
+    })
 
-  schedule.scheduleJob('*/1 * * * *', () => {
-    console.log(moment().toString() + 'noticeSoonEvents')
-    noticeSoonEvents(oAuth2Client)
-  })
-
-  schedule.scheduleJob('23 9 * * *', () => {
-    console.log(moment().toString() + 'noticeDailyEvents')
-    noticeDailyEvents(oAuth2Client)
-  })
-
-  schedule.scheduleJob('30 9 * * 1', () => {
-    console.log(moment().toString() + 'noticeWeeklyEvents')
-    noticeWeeklyEvents(oAuth2Client)
+    schedule.scheduleJob('30 9 * * 1', () => {
+      console.log(moment().toString() + 'noticeWeeklyEvents')
+      noticeWeeklyEvents(oAuth2Client, calendarId)
+    })
   })
 }
 
 exports.run()
 
-function noticeWeeklyEvents(auth) {
+function noticeWeeklyEvents(auth, calendarId) {
   const calendar = google.calendar({version: 'v3', auth})
   const timeMin = moment().toDate()
   const timeMax = moment().add(7, 'days').toDate()
   calendar.events.list({
-    calendarId: config.calendar.id,
+    calendarId,
     timeMin,
     timeMax,
     singleEvents: true,
@@ -122,24 +122,27 @@ function noticeWeeklyEvents(auth) {
         const dayNumber = moment(start).format('e')
         return `\`${year}년 ${month}월 ${day}일 ${getDayOfWeekString(dayNumber)} ${hour}시 ${minute}분\` [${event.summary}](${event.htmlLink})`
       })
-      const message = `_다음주 월요일까지 캠프 캘린더에 등록한 일정입니다._\n\n${_.join(info, '\n')}`
+      const message = `*${response.data.summary}*\n_다음주 월요일까지 캠프 캘린더에 등록한 일정입니다._\n\n${_.join(info, '\n')}`
       telegramBot.sendMessage(config.bot.telegramChatId, message, {parse_mode: 'Markdown'})
     }
   })
 }
 
-function noticeUpsertedEvents(auth) {
+function noticeUpsertedEvents(auth, calendarId) {
   const calendar = google.calendar({version: 'v3', auth})
   calendar.events.list({
-    calendarId: config.calendar.id,
-    updatedMin: moment().subtract(3, 'minutes').toDate(),
+    calendarId: calendarId,
+    timeMin: moment().toDate(),
     singleEvents: true,
     orderBy: 'startTime',
   }, (err, response) => {
     if (err) return console.log('noticeUpsertedEvents The API returned an error: ' + err)
     const events = response.data.items
     if (events.length) {
-      const info = events.map((event) => {
+      const info = events.filter(event => {
+        const start = event.start.dateTime || event.start.date
+        return moment().set({second: 0, millisecond: 0}).diff(event.updated, 'minutes') < 4
+      }).map((event) => {
         const start = event.start.dateTime || event.start.date
         const year = moment(start).format('YYYY')
         const month = moment(start).format('MM')
@@ -149,18 +152,20 @@ function noticeUpsertedEvents(auth) {
         const dayNumber = moment(start).format('e')
         return `\`${year}년 ${month}월 ${day}일 ${getDayOfWeekString(dayNumber)} ${hour}시 ${minute}분\` [${event.summary}](${event.htmlLink})`
       })
-      const message = `_최근 신규 등록 또는 수정한 일정입니다._\n\n${_.join(info, '\n')}`
-      telegramBot.sendMessage(config.bot.telegramChatId, message, {parse_mode: 'Markdown'})
+      const message = `*${response.data.summary}*\n_최근 신규 등록 또는 수정한 일정입니다._\n\n${_.join(info, '\n')}`
+      if (!_.isEmpty(info)) {
+        telegramBot.sendMessage(config.bot.telegramChatId, message, {parse_mode: 'Markdown'})
+      }
     }
   })
 }
 
-function noticeDailyEvents(auth) {
+function noticeDailyEvents(auth, calendarId) {
   const calendar = google.calendar({version: 'v3', auth})
   const timeMin = moment().toDate()
   const timeMax = moment().add(1, 'days').toDate()
   calendar.events.list({
-    calendarId: config.calendar.id,
+    calendarId,
     timeMin,
     timeMax,
     singleEvents: true,
@@ -179,32 +184,28 @@ function noticeDailyEvents(auth) {
         const dayNumber = moment(start).format('e')
         return `\`${year}년 ${month}월 ${day}일 ${getDayOfWeekString(dayNumber)} ${hour}시 ${minute}분\` [${event.summary}](${event.htmlLink})`
       })
-      const message = `_오늘 일정입니다._\n\n${_.join(info, '\n')}`
+      const message = `*${response.data.summary}*\n_오늘 일정입니다._\n\n${_.join(info, '\n')}`
       telegramBot.sendMessage(config.bot.telegramChatId, message, {parse_mode: 'Markdown'})
     }
   })
 }
 
-function noticeSoonEvents(auth) {
+function noticeSoonEvents(auth, calendarId) {
   const calendar = google.calendar({version: 'v3', auth})
   const timeMin = moment().toDate()
-  console.log('timeMin :' + timeMin)
   const timeMax = moment().add(10, 'minutes').set({second: 59, millisecond: 0}).toDate()
-  console.log('timeMax :' + timeMax)
   calendar.events.list({
-    calendarId: config.calendar.id,
+    calendarId,
     timeMin,
     timeMax,
     singleEvents: true,
     orderBy: 'startTime',
   }, (err, response) => {
-    console.log(response.data.items)
     if (err) return console.log('noticeWeeklyEvents The API returned an error: ' + err)
     const events = response.data.items
     if (events.length) {
       const info = events.filter(event => {
         const start = event.start.dateTime || event.start.date
-        console.log(moment().set({second: 0, millisecond: 0}).to(start))
         return moment().set({second: 0, millisecond: 0}).to(start) === 'in 10 minutes'
       }).map((event) => {
         const start = event.start.dateTime || event.start.date
@@ -216,7 +217,7 @@ function noticeSoonEvents(auth) {
         const dayNumber = moment(start).format('e')
         return `\`${year}년 ${month}월 ${day}일 ${getDayOfWeekString(dayNumber)} ${hour}시 ${minute}분\` [${event.summary}](${event.htmlLink})`
       })
-      const message = `_다음 일정이 약 10분 후 시작합니다._\n\n${_.join(info, '\n')}`
+      const message = `*${response.data.summary}*\n_다음 일정이 약 10분 후 시작합니다._\n\n${_.join(info, '\n')}`
       if (!_.isEmpty(info)) {
         telegramBot.sendMessage(config.bot.telegramChatId, message, {parse_mode: 'Markdown'})
       }

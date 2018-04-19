@@ -4,6 +4,6 @@
     "telegramChatId": "Telegram chat id"
   },
   "calendar": {
-    "id": "primary"
+    "ids": ["primary"]
   }
 }
