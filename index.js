@@ -93,6 +93,11 @@ exports.run = async () => {
       console.log(moment().toString() + 'noticeWeeklyEvents')
       noticeWeeklyEvents(oAuth2Client, calendarId)
     })
+
+    schedule.scheduleJob('*/1 * * * *', () => {
+      console.log(moment().toString() + 'noticeSoonDayEvents')
+      noticeSoonDayEvents(oAuth2Client, calendarId)
+    })
   })
 }
 
@@ -218,6 +223,41 @@ function noticeSoonEvents(auth, calendarId) {
         return `\`${year}년 ${month}월 ${day}일 ${getDayOfWeekString(dayNumber)} ${hour}시 ${minute}분\` [${event.summary}](${event.htmlLink})`
       })
       const message = `*${response.data.summary}*\n_다음 일정이 약 10분 후 시작합니다._\n\n${_.join(info, '\n')}`
+      if (!_.isEmpty(info)) {
+        telegramBot.sendMessage(config.bot.telegramChatId, message, {parse_mode: 'Markdown'})
+      }
+    }
+  })
+}
+
+function noticeSoonDayEvents(auth, calendarId) {
+  const calendar = google.calendar({version: 'v3', auth})
+  const timeMin = moment().toDate()
+  const timeMax = moment().add(1, 'days').set({second: 59, millisecond: 0}).toDate()
+  calendar.events.list({
+    calendarId,
+    timeMin,
+    timeMax,
+    singleEvents: true,
+    orderBy: 'startTime',
+  }, (err, response) => {
+    if (err) return console.log('noticeWeeklyEvents The API returned an error: ' + err)
+    const events = response.data.items
+    if (events.length) {
+      const info = events.filter(event => {
+        const start = event.start.dateTime || event.start.date
+        return moment(start).diff(moment().set({second: 0, millisecond: 0}), 'hours') === 24
+      }).map((event) => {
+        const start = event.start.dateTime || event.start.date
+        const year = moment(start).format('YYYY')
+        const month = moment(start).format('MM')
+        const day = moment(start).format('DD')
+        const hour = moment(start).format('HH')
+        const minute = moment(start).format('mm')
+        const dayNumber = moment(start).format('e')
+        return `\`${year}년 ${month}월 ${day}일 ${getDayOfWeekString(dayNumber)} ${hour}시 ${minute}분\` [${event.summary}](${event.htmlLink})`
+      })
+      const message = `*${response.data.summary}*\n_다음 일정이 약 24시간 후 시작합니다._\n\n${_.join(info, '\n')}`
       if (!_.isEmpty(info)) {
         telegramBot.sendMessage(config.bot.telegramChatId, message, {parse_mode: 'Markdown'})
       }
