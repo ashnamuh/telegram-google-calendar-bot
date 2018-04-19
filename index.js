@@ -103,7 +103,7 @@ function noticeWeeklyEvents(auth) {
   const timeMin = moment().toDate()
   const timeMax = moment().add(7, 'days').toDate()
   calendar.events.list({
-    calendarId: 'primary',
+    calendarId: config.calendar.id,
     timeMin,
     timeMax,
     singleEvents: true,
@@ -131,7 +131,7 @@ function noticeWeeklyEvents(auth) {
 function noticeUpsertedEvents(auth) {
   const calendar = google.calendar({version: 'v3', auth})
   calendar.events.list({
-    calendarId: 'primary',
+    calendarId: config.calendar.id,
     updatedMin: moment().subtract(3, 'minutes').toDate(),
     singleEvents: true,
     orderBy: 'startTime',
@@ -160,7 +160,7 @@ function noticeDailyEvents(auth) {
   const timeMin = moment().toDate()
   const timeMax = moment().add(1, 'days').toDate()
   calendar.events.list({
-    calendarId: 'primary',
+    calendarId: config.calendar.id,
     timeMin,
     timeMax,
     singleEvents: true,
@@ -192,7 +192,7 @@ function noticeSoonEvents(auth) {
   const timeMax = moment().add(10, 'minutes').set({second: 59, millisecond: 0}).toDate()
   console.log('timeMax :' + timeMax)
   calendar.events.list({
-    calendarId: 'primary',
+    calendarId: config.calendar.id,
     timeMin,
     timeMax,
     singleEvents: true,
